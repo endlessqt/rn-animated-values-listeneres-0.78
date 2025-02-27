@@ -1,131 +1,115 @@
-/**
- * Sample React Native App
- * https://github.com/facebook/react-native
- *
- * @format
- */
-
-import React from 'react';
-import type {PropsWithChildren} from 'react';
+import React, {useEffect} from 'react';
 import {
-  ScrollView,
-  StatusBar,
-  StyleSheet,
-  Text,
-  useColorScheme,
   View,
+  StatusBar,
+  Animated,
+  Button,
+  Text,
+  useAnimatedValue,
+  StyleSheet,
 } from 'react-native';
+import {SafeAreaProvider, SafeAreaView} from 'react-native-safe-area-context';
 
-import {
-  Colors,
-  DebugInstructions,
-  Header,
-  LearnMoreLinks,
-  ReloadInstructions,
-} from 'react-native/Libraries/NewAppScreen';
+// in my case its coming from props and also combined value using Multiply operator, but for demonstation its doesn't matter
+const anyOutsideIncomingAnimValue = new Animated.Value(1);
 
-type SectionProps = PropsWithChildren<{
-  title: string;
-}>;
+const Component = () => {
+  // fadeAnim will be used as the value for opacity. Initial Value: 0
+  const fadeAnim = useAnimatedValue(0);
+  const scaleAnim = Animated.add(fadeAnim, anyOutsideIncomingAnimValue);
 
-function Section({children, title}: SectionProps): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-  return (
-    <View style={styles.sectionContainer}>
-      <Text
-        style={[
-          styles.sectionTitle,
-          {
-            color: isDarkMode ? Colors.white : Colors.black,
-          },
-        ]}>
-        {title}
-      </Text>
-      <Text
-        style={[
-          styles.sectionDescription,
-          {
-            color: isDarkMode ? Colors.light : Colors.dark,
-          },
-        ]}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
-function App(): React.JSX.Element {
-  const isDarkMode = useColorScheme() === 'dark';
-
-  const backgroundStyle = {
-    backgroundColor: isDarkMode ? Colors.darker : Colors.lighter,
+  const fadeIn = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 2000,
+      useNativeDriver: true,
+    }).start();
   };
 
-  /*
-   * To keep the template simple and small we're adding padding to prevent view
-   * from rendering under the System UI.
-   * For bigger apps the reccomendation is to use `react-native-safe-area-context`:
-   * https://github.com/AppAndFlow/react-native-safe-area-context
-   *
-   * You can read more about it here:
-   * https://github.com/react-native-community/discussions-and-proposals/discussions/827
-   */
-  const safePadding = '5%';
+  const fadeOut = () => {
+    Animated.timing(fadeAnim, {
+      toValue: 0,
+      duration: 2000,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  useEffect(() => {
+    let id = fadeAnim.addListener(val => {
+      // works fine, listener is attached
+      console.log('faedAnim value', val.value);
+    });
+    return () => {
+      fadeAnim.removeListener(id);
+    };
+  });
+  useEffect(() => {
+    let id = scaleAnim.addListener(val => {
+      // never fires
+      console.log('scale anim value', val.value);
+    });
+
+    return () => {
+      scaleAnim.removeListener(id);
+    };
+  }, [scaleAnim]);
 
   return (
-    <View style={backgroundStyle}>
-      <StatusBar
-        barStyle={isDarkMode ? 'light-content' : 'dark-content'}
-        backgroundColor={backgroundStyle.backgroundColor}
+    <SafeAreaView style={{flex: 1}}>
+      <Animated.View
+        style={[
+          styles.fadingContainer,
+          {
+            opacity: fadeAnim,
+          },
+        ]}>
+        <Text style={styles.fadingText}>{'Fading View!'}</Text>
+      </Animated.View>
+      <Animated.View
+        style={[
+          {
+            height: 30,
+            width: 30,
+            backgroundColor: 'red',
+          },
+          {
+            transform: [{scale: scaleAnim}],
+          },
+        ]}
       />
-      <ScrollView
-        style={backgroundStyle}>
-        <View style={{paddingRight: safePadding}}>
-          <Header/>
-        </View>
-        <View
-          style={{
-            backgroundColor: isDarkMode ? Colors.black : Colors.white,
-            paddingHorizontal: safePadding,
-            paddingBottom: safePadding,
-          }}>
-          <Section title="Step One">
-            Edit <Text style={styles.highlight}>App.tsx</Text> to change this
-            screen and then come back to see your edits.
-          </Section>
-          <Section title="See Your Changes">
-            <ReloadInstructions />
-          </Section>
-          <Section title="Debug">
-            <DebugInstructions />
-          </Section>
-          <Section title="Learn More">
-            Read the docs to discover what to do next:
-          </Section>
-          <LearnMoreLinks />
-        </View>
-      </ScrollView>
-    </View>
+      <View style={styles.buttonRow}>
+        <Button title="Fade In View" onPress={fadeIn} />
+        <Button title="Fade Out View" onPress={fadeOut} />
+      </View>
+    </SafeAreaView>
+  );
+};
+
+export function App() {
+  return (
+    <SafeAreaProvider>
+      <StatusBar hidden />
+      <Component />
+    </SafeAreaProvider>
   );
 }
 
 const styles = StyleSheet.create({
-  sectionContainer: {
-    marginTop: 32,
-    paddingHorizontal: 24,
+  container: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: '600',
+  fadingContainer: {
+    padding: 20,
+    backgroundColor: 'powderblue',
   },
-  sectionDescription: {
-    marginTop: 8,
-    fontSize: 18,
-    fontWeight: '400',
+  fadingText: {
+    fontSize: 28,
   },
-  highlight: {
-    fontWeight: '700',
+  buttonRow: {
+    flexBasis: 100,
+    justifyContent: 'space-evenly',
+    marginVertical: 16,
   },
 });
-
-export default App;
